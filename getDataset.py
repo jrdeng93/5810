@@ -29,7 +29,7 @@ def get_dataset(project_id, location, dataset_id):
 
     return dataset
 
-def search_resources_post(project_id, location, dataset_id, fhir_store_id, query_key,query_value):
+def search_resources_post(project_id, location, dataset_id, fhir_store_id, query_key,query_value,dataType):
     """
     Searches for resources in the given FHIR store. Uses the
     _search POST method and a query string containing the
@@ -49,7 +49,7 @@ def search_resources_post(project_id, location, dataset_id, fhir_store_id, query
 
     # Gets credentials from the environment.
     credentials = service_account.Credentials.from_service_account_file(
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        "./intricate-will-343721-0ef3bfb5b7e4.json"
     )
     scoped_credentials = credentials.with_scopes(
         ["https://www.googleapis.com/auth/cloud-platform"]
@@ -71,7 +71,7 @@ def search_resources_post(project_id, location, dataset_id, fhir_store_id, query
         url, dataset_id, fhir_store_id
     )
 
-    resource_path = "{}/Patient/_search?{}:exact={}".format(fhir_store_path,query_key,query_value)
+    resource_path = "{}/{}/_search?{}:contains={}".format(fhir_store_path,dataType,query_key,query_value)
 
     # Sets required application/fhir+json header on the request
     headers = {"Content-Type": "application/fhir+json;charset=utf-8"}
@@ -91,32 +91,74 @@ def search_resources_post(project_id, location, dataset_id, fhir_store_id, query
     return resources
 
 
+patient = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","resourceType","Patient","Patient")
 
-# get_dataset("intricate-will-343721","us-central1","Test_1")
-
-h = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","resourceType","Bundle")
-# from json2txttree import json2txttree
-# print(json2txttree(h))
-# print(h['entry'][0]["resource"]['name'][0]['family'])
-def pasrseResult(result,key):
+def pasrsePatient(result,key):
     res = []
     total = result['total']
     if len(key) == 1:
         for i in range(total):
-            print(result['entry'][i]["resource"][key[0]])
-            res.append(result['entry'][i]["resource"][key[0]])
+            try:
+                res.append(result['entry'][i]["resource"][key[0]])
+            except:
+                res.append("none")
+
     elif len(key) == 2:
         for i in range(total):
-            print(result['entry'][i]["resource"][key[0]][0][key[1]])
+            # print(result['entry'][i]["resource"][key[0]][0][key[1]])
             res.append(result['entry'][i]["resource"][key[0]][0][key[1]])
     return res
 
+obs = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","Observation","20f8110a-d99c-4d2d-a177-20a70870a383","Observation")
+for k in obs.keys():
+    print(k)
+print(obs['entry'])
+print(len(obs['entry']))
+exit()
+
+def parseObservation(result,key):
+    res = []
+    total =150#len(result['entry'])
+    if len(key) == 1:
+        for i in range(total):
+            try:
+                res.append(result['entry'][i]["resource"][key[0]])
+            except:
+                res.append("none")
+
+    elif len(key) == 2:
+        for i in range(total):
+            try:
+                # print(result['entry'][i]["resource"][key[0]][key[1]])
+                res.append(result['entry'][i]["resource"][key[0]][key[1]])
+            except:
+                res.append("none")
+
+    return res
+
+
 import pandas as pd
-bD = pasrseResult(h,['birthDate'])
-nm = pasrseResult(h,['name','family'])
-gd = pasrseResult(h,['gender'])
-
-
-df = pd.DataFrame([nm,bD,gd])
+#####Generate Patient Dataframe
+bD = pasrsePatient(patient,['birthDate'])
+nm = pasrsePatient(patient,['name','family'])
+gd = pasrsePatient(patient,['gender'])
+id = pasrsePatient(patient,['id'])
+df = pd.DataFrame([id,nm,bD,gd])
 df = df.transpose()
 print(df)
+
+#####Generate Observation Dataframe
+obsMap = {"id":['subject','reference'],"code":['code','text'],"value":["valueQuantity","value"],"unit":["valueQuantity","unit"]}
+id = parseObservation(obs,obsMap["id"])
+newId = []
+for i in id:
+    newId.append(i[8:])
+id = newId
+code = parseObservation(obs,obsMap["code"])
+value = parseObservation(obs,obsMap["value"])
+unit = parseObservation(obs,obsMap["unit"])
+df = pd.DataFrame([id,code,value,unit])
+df = df.transpose()
+print(df)
+#### query gender = male
+#male_Data = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","gender","male")
