@@ -92,7 +92,12 @@ def search_resources_post(project_id, location, dataset_id, fhir_store_id, query
 
 
 patient = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","resourceType","Patient","Patient")
-
+# for k in patient['resource'].keys():
+#     print(k)
+#print(patient['entry'][0]["resource"]["address"][0]['country'])
+# exit()
+# print(len(patient['entry']))
+# exit()
 def pasrsePatient(result,key):
     res = []
     total = result['total']
@@ -105,20 +110,23 @@ def pasrsePatient(result,key):
 
     elif len(key) == 2:
         for i in range(total):
+            try:
             # print(result['entry'][i]["resource"][key[0]][0][key[1]])
-            res.append(result['entry'][i]["resource"][key[0]][0][key[1]])
+                res.append(result['entry'][i]["resource"][key[0]][0][key[1]])
+            except:
+                res.append("none")
     return res
 
 obs = search_resources_post("intricate-will-343721", "us-central1","Test_1", "5810test","Observation","20f8110a-d99c-4d2d-a177-20a70870a383","Observation")
-for k in obs.keys():
-    print(k)
-print(obs['entry'])
-print(len(obs['entry']))
-exit()
+# for k in obs.keys():
+#     print(k)
+# print(obs['entry'])
+# print(len(obs['entry']))
+# exit()
 
 def parseObservation(result,key):
     res = []
-    total =150#len(result['entry'])
+    total =100#len(result['entry'])
     if len(key) == 1:
         for i in range(total):
             try:
@@ -143,7 +151,10 @@ bD = pasrsePatient(patient,['birthDate'])
 nm = pasrsePatient(patient,['name','family'])
 gd = pasrsePatient(patient,['gender'])
 id = pasrsePatient(patient,['id'])
-df = pd.DataFrame([id,nm,bD,gd])
+adds_city = pasrsePatient(patient,['address','city'])
+adds_state = pasrsePatient(patient,['address','state'])
+adds_country = pasrsePatient(patient,['address','country'])
+df = pd.DataFrame([id,nm,bD,gd,adds_city,adds_state,adds_country])
 df = df.transpose()
 print(df)
 
